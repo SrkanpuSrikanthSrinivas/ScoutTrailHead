@@ -1,0 +1,19 @@
+{
+  "name": "troop-trailhead",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Scout Workflow Management — web (Vercel) + iOS/Android (Expo), shared Neon Postgres backend.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @trailhead/web",
+    "dev:mobile": "npm run start -w @trailhead/mobile",
+    "db:generate": "npm run generate -w @trailhead/db",
+    "db:migrate": "npm run migrate -w @trailhead/db",
+    "db:seed": "npm run seed -w @trailhead/db",
+    "build:web": "npm run build -w @trailhead/web"
+  },
+  "engines": { "node": ">=20" }
+}
