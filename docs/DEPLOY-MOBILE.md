@@ -3,6 +3,16 @@
 Expo's EAS service builds the native binaries in the cloud and can submit them to the
 stores. You run the commands; Apple and Google host and review the result.
 
+## Heads up: mobile installs on its own
+`apps/mobile` is intentionally **not** part of the root npm workspaces (its React 18 must stay
+out of the web build). So install it standalone:
+```bash
+cd apps/mobile
+npm install        # pulls Expo + React Native + links @trailhead/core via file:
+```
+The shared `@trailhead/core` package is wired in as `"file:../../packages/core"`, and
+`metro.config.js` already watches the repo root so Metro can read that source.
+
 ## What you need first
 - An **Expo account** (free): https://expo.dev
 - **Apple Developer Program** membership — $99/year — https://developer.apple.com/programs

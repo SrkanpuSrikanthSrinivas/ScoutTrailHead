@@ -13,7 +13,14 @@ The web app and all `/api` routes deploy together as one Vercel project.
    ```
 5. Click **Deploy**.
 
-## Why the install command is scoped (important)
+## Two settings that MUST be right
+1. **Root Directory = `apps/web`** in Vercel project settings. Without it, Vercel won't
+   detect the Next.js app or read `apps/web/vercel.json`.
+2. If a build ever fails after a config change, **Redeploy with build cache disabled**
+   (Deployments → ⋯ → Redeploy → untick "Use existing Build Cache"). A cached `node_modules`
+   from an earlier broken install can otherwise persist.
+
+## Why mixing React versions used to break the build
 `apps/web/vercel.json` installs **only** the web app and the two shared packages:
 
 ```
@@ -21,12 +28,15 @@ npm install --include-workspace-root \
   --workspace @trailhead/web --workspace @trailhead/core --workspace @trailhead/db
 ```
 
-This is deliberate. The **mobile** app pins React 18.3.1 (required by Expo SDK 52) while the
-**web** app uses React 19 (required by Next 15). If Vercel installed the whole monorepo, both
-Reacts would land in the build tree and Next's prerender of `/404` and `/_error` fails with
-`Cannot read properties of null (reading 'useContext')`. Excluding the mobile workspace leaves
-exactly one React (19) in the web build. `react` and `react-dom` are also pinned to the same
-exact version so they can't drift.
+The **mobile** app pins React 18.3.1 (required by Expo SDK 52); the **web** app uses React 19
+(required by Next 15). When both lived in the same npm workspaces, Vercel installed both, and
+Next's prerender of `/404` / `/_error` failed with
+`Cannot read properties of null (reading 'useContext')` (mismatched React/react-dom).
+
+**This is now structurally impossible:** `apps/mobile` is no longer an npm workspace (see the
+root `package.json` — workspaces are only `packages/*` and `apps/web`). A root `npm install`
+therefore installs **only React 19**. The committed `package-lock.json` reflects this. Mobile
+installs separately with its own React 18 and never touches the web build.
 
 ## Commit a lockfile (clears the SWC warning)
 Run this once locally and commit the result so Vercel has a deterministic, SWC-complete lockfile:

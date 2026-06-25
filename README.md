@@ -15,8 +15,8 @@ troop-trailhead/
 │  ├─ core/         shared constants, types, validation (ranks, steps, schemas)
 │  └─ db/           Drizzle schema, Neon client, migrations, seed
 ├─ apps/
-│  ├─ web/          Next.js — UI + /api routes (deploys to Vercel)
-│  └─ mobile/       Expo Router app — iOS + Android (builds via EAS)
+│  ├─ web/          Next.js — UI + /api routes (deploys to Vercel)   [npm workspace]
+│  └─ mobile/       Expo Router app — iOS + Android (builds via EAS)  [standalone install]
 └─ docs/            deployment runbooks
 ```
 
@@ -53,7 +53,10 @@ npm run db:seed                  # demo troop + 3 role logins (all password123) 
 npm run dev:web
 
 # 5. run the mobile app (separate terminal)
-#    first set apps/mobile/.env -> EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:3000
+#    mobile is NOT part of the root workspaces (keeps its React 18 away from the
+#    web build), so install it on its own the first time:
+cd apps/mobile && npm install && cd ../..
+#    set apps/mobile/.env -> EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:3000
 npm run dev:mobile
 ```
 
