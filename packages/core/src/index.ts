@@ -19,9 +19,9 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 export const ROLE_BLURB: Record<Role, string> = {
   admin: "Full access; manages the team and can act on every stage.",
-  web_setup: "Handles new intake: Scoutbook, comms, records — then sends to finance.",
+  web_setup: "Optional specialist who handles Scoutbook/records setup (a leader can also do this).",
   finance: "Confirms registration fees and dues are paid, then approves to the roster.",
-  leader: "Can view the roster, pipeline, and gear. Cannot move scouts through the gates.",
+  leader: "Receives new parent submissions, starts the workflow, and prepares records before finance.",
 };
 
 /* ============================================================
@@ -34,10 +34,10 @@ export type Status = "submitted" | "web_setup" | "finance" | "active" | "decline
 export const STATUS_FLOW = ["submitted", "web_setup", "finance", "active"] as const;
 
 export const STATUS_META: Record<Status, { label: string; short: string; owner: Role | null; desc: string }> = {
-  submitted: { label: "Submitted", short: "Submitted", owner: "web_setup",
-    desc: "A parent submitted the intake. Waiting for the web setup committee to pick it up." },
-  web_setup: { label: "Web Setup", short: "Web Setup", owner: "web_setup",
-    desc: "Committee sets up Scoutbook, comms, and records. For transfers, capture current rank & badges, then send to finance." },
+  submitted: { label: "Submitted", short: "Submitted", owner: "leader",
+    desc: "A parent submitted the scout's details. Waiting for a troop leader to review and start the workflow." },
+  web_setup: { label: "Web Setup", short: "Web Setup", owner: "leader",
+    desc: "A leader sets up Scoutbook, comms, and records. For transfers, capture current rank & badges, then send to finance." },
   finance: { label: "Finance / Payment", short: "Finance", owner: "finance",
     desc: "Confirm national + council fees and troop dues are paid. This is the gate before the roster." },
   active: { label: "Approved — on roster", short: "Approved", owner: null,
@@ -48,13 +48,13 @@ export const STATUS_META: Record<Status, { label: string; short: string; owner: 
 
 /** Every legal transition, who may perform it, and how it reads in the UI. */
 export const ACTIONS = [
-  { from: "submitted", to: "web_setup", roles: ["web_setup", "admin"], label: "Start web setup", kind: "forward" },
-  { from: "web_setup", to: "finance",   roles: ["web_setup", "admin"], label: "Send to finance", kind: "forward" },
+  { from: "submitted", to: "web_setup", roles: ["leader", "web_setup", "admin"], label: "Review & start setup", kind: "forward" },
+  { from: "web_setup", to: "finance",   roles: ["leader", "web_setup", "admin"], label: "Send to finance", kind: "forward" },
   { from: "finance",   to: "active",    roles: ["finance", "admin"],   label: "Confirm payment & approve", kind: "forward" },
-  { from: "finance",   to: "web_setup", roles: ["finance", "admin"],   label: "Send back to web setup", kind: "back" },
-  { from: "web_setup", to: "submitted", roles: ["web_setup", "admin"], label: "Return to queue", kind: "back" },
-  { from: "submitted", to: "declined",  roles: ["web_setup", "admin"], label: "Decline", kind: "decline" },
-  { from: "web_setup", to: "declined",  roles: ["web_setup", "admin"], label: "Decline", kind: "decline" },
+  { from: "finance",   to: "web_setup", roles: ["finance", "admin"],   label: "Send back to setup", kind: "back" },
+  { from: "web_setup", to: "submitted", roles: ["leader", "web_setup", "admin"], label: "Return to queue", kind: "back" },
+  { from: "submitted", to: "declined",  roles: ["leader", "web_setup", "admin"], label: "Decline", kind: "decline" },
+  { from: "web_setup", to: "declined",  roles: ["leader", "web_setup", "admin"], label: "Decline", kind: "decline" },
   { from: "finance",   to: "declined",  roles: ["finance", "admin"],   label: "Decline", kind: "decline" },
 ] as const;
 export type Action = (typeof ACTIONS)[number];
@@ -63,11 +63,9 @@ export type Action = (typeof ACTIONS)[number];
 export const actionsFor = (status: string, role: string): Action[] =>
   ACTIONS.filter((a) => a.from === status && (a.roles as readonly string[]).includes(role));
 
-/** Is this scout in *my* queue right now (the stage my role owns)? Admin owns all open stages. */
+/** Is this scout in *my* queue right now — i.e. can my role move it forward from here? */
 export const ownsQueue = (status: string, role: string): boolean =>
-  role === "admin"
-    ? ["submitted", "web_setup", "finance"].includes(status)
-    : STATUS_META[status as Status]?.owner === role;
+  actionsFor(status, role).some((a) => a.kind === "forward");
 
 /** Who is the scout currently waiting on? */
 export const waitingOn = (status: string): string => {

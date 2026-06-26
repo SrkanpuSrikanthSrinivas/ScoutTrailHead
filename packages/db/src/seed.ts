@@ -4,15 +4,16 @@ import { DEFAULT_INVENTORY, DEFAULT_FAQ } from "@trailhead/core";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 
-/** TROOP 216 + one user per workflow role + a few scouts spread across the gates. */
+/** Demo troop + one user per workflow role + a few scouts spread across the gates. */
 async function main() {
   const db = getDb();
   const code = randomBytes(4).toString("hex").toUpperCase();
-  const [troop] = await db.insert(troops).values({ name: "TROOP 216 100", inviteCode: code }).returning();
+  const [troop] = await db.insert(troops).values({ name: "Demo Troop 100", inviteCode: code }).returning();
 
   const pw = await bcrypt.hash("password123", 10);
   await db.insert(users).values([
     { troopId: troop.id, email: "admin@example.com",   passwordHash: pw, name: "Troop Admin",   role: "admin" },
+    { troopId: troop.id, email: "leader@example.com",   passwordHash: pw, name: "Laura Leader",  role: "leader" },
     { troopId: troop.id, email: "web@example.com",      passwordHash: pw, name: "Wendy Web",     role: "web_setup" },
     { troopId: troop.id, email: "finance@example.com",  passwordHash: pw, name: "Frank Finance", role: "finance" },
   ]);
@@ -44,6 +45,7 @@ async function main() {
   console.log("Seeded troop:", troop.name);
   console.log("Logins (all password123):");
   console.log("  admin@example.com    (admin)");
+  console.log("  leader@example.com   (leader — receives & starts intakes)");
   console.log("  web@example.com      (web setup)");
   console.log("  finance@example.com  (finance)");
   console.log("Invite code (committee join):", code);

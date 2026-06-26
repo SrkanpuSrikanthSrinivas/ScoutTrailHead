@@ -44,10 +44,10 @@ cp .env.example .env
 cp .env apps/web/.env            # web reads these at runtime
 #   generate a secret:  openssl rand -base64 48
 
-# 3. create the database tables, then seed a TROOP 216
+# 3. create the database tables, then seed a demo troop
 npm run db:generate              # creates SQL migrations from the schema
 npm run db:migrate               # applies them to Neon
-npm run db:seed                  # TROOP 216 + 3 role logins (all password123) + sample scouts
+npm run db:seed                  # demo troop + 3 role logins (all password123) + sample scouts
 
 # 4. run the web app (http://localhost:3000)
 npm run dev:web
@@ -62,8 +62,9 @@ npm run dev:mobile
 
 Sign in with one of the seeded logins (all `password123`):
 - `admin@example.com` — admin (also manages the **Team** tab)
-- `web@example.com` — web setup
-- `finance@example.com` — finance
+- `leader@example.com` — leader (receives parent submissions and starts the workflow)
+- `web@example.com` — web setup (optional specialist)
+- `finance@example.com` — finance (confirms payment, approves to roster)
 
 Log in as each to see the **role-gated intake workflow**: web setup advances a scout to
 finance, finance confirms payment and approves to the roster. The **Team** tab (admin) has

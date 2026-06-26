@@ -7,7 +7,7 @@ You have three ways to create the tables. Pick one.
 2. Open `packages/db/neon-setup.sql`, copy everything, paste, and **Run**.
    This creates all 7 tables, indexes, and foreign keys. Safe to re-run
    (`CREATE TABLE IF NOT EXISTS`).
-3. (Optional) For a TROOP 216 you can log into immediately, also paste and run
+3. (Optional) For a demo troop you can log into immediately, also paste and run
    `packages/db/neon-seed.sql`, then read the invite code from the final `SELECT`.
    Demo logins (all password `password123`):
    - `admin@example.com` (admin) · `web@example.com` (web setup) · `finance@example.com` (finance)

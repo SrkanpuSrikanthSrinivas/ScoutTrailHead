@@ -33,13 +33,13 @@ export default function IntakePage() {
   if (bad) return <Shell><h2>Link not recognized</h2><p className="muted">Double-check the intake link your troop shared with you.</p></Shell>;
   if (done) return <Shell><div style={{ textAlign: "center" }}><div style={{ fontSize: 48 }}>🏕️</div>
     <h2>Thanks, {f.parentName.split(" ")[0] || "and welcome"}!</h2>
-    <p className="muted">{f.scoutName}&rsquo;s information has been sent to {troop || "the troop"}&rsquo;s committee. They&rsquo;ll get records set up and reach out about registration and fees. No account needed on your end.</p></div></Shell>;
+    <p className="muted">{f.scoutName}&rsquo;s information has been sent to {troop || "the troop"}&rsquo;s leaders. A leader will review and start the registration, and reach out about next steps and fees. No account needed on your end.</p></div></Shell>;
 
   return (
     <Shell>
       <div className="eyebrow">Join {troop || "the troop"}</div>
       <h2>Scout intake</h2>
-      <p className="muted" style={{ marginTop: -2 }}>Tell us about your scout. The committee handles setup and will follow up about fees — you don&rsquo;t need to create an account.</p>
+      <p className="muted" style={{ marginTop: -2 }}>Tell us about your scout. A troop leader reviews each submission and starts the process — you don&rsquo;t need to create an account.</p>
       <div style={{ display: "grid", gap: 13, marginTop: 18 }}>
         <div><label className="fld">Scout&rsquo;s full name</label><input value={f.scoutName} onChange={set("scoutName")} autoFocus /></div>
         <div><label className="fld">Joining as</label><div className="seg">

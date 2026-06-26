@@ -322,7 +322,7 @@ function Team({ troop, onRenamed }: { troop: any; onRenamed: () => Promise<void>
       </div>
       <div className="card">
         <div className="sectitle">Share with parents</div>
-        <p className="muted" style={{ marginTop: -4 }}>Anyone with this link can submit a scout — no account needed. New submissions land in the Web Setup queue.</p>
+        <p className="muted" style={{ marginTop: -4 }}>Anyone with this link (or the join code below) can submit a scout — no account needed. New submissions land with your troop&rsquo;s leaders to start the workflow.</p>
         <div className="linkbox">{intakeLink}<span style={{ flex: 1 }} /><button className="btn sm" onClick={() => copy(intakeLink, "link")}>{copied === "link" ? "Copied!" : "Copy"}</button></div>
       </div>
       <div className="card">

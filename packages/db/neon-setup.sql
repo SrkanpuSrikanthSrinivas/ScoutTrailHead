@@ -1,7 +1,6 @@
 -- ============================================================
 --  Trailhead — Neon schema setup
---  Paste this whole file into the Neon SQL Editor and Run.
---  Safe to run more than once (CREATE ... IF NOT EXISTS).
+--  Paste this whole file into the Neon SQL Editor and Run. Safe to re-run.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS "badges" (
