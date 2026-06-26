@@ -9,6 +9,7 @@ type Ctx = {
   signup: (troopName: string, name: string, email: string, password: string) => Promise<void>;
   join: (inviteCode: string, name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  renameTroop: (name: string) => Promise<void>;
 };
 const AuthContext = createContext<Ctx>(null as any);
 export const useAuth = () => useContext(AuthContext);
@@ -35,6 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signup: async (troopName, name, email, password) => finish(await api("/auth/signup", { method: "POST", body: JSON.stringify({ troopName, name, email, password }) })),
     join: async (inviteCode, name, email, password) => finish(await api("/auth/join", { method: "POST", body: JSON.stringify({ inviteCode, name, email, password }) })),
     logout: async () => { await clearToken(); setUser(null); setTroop(null); },
+    renameTroop: async (name: string) => {
+      const r = await api("/troop", { method: "PATCH", body: JSON.stringify({ name }) });
+      setTroop((t) => (t ? { ...t, name: r.name } : t));
+    },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

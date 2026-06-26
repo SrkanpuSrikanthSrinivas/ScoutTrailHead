@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Trailhead — Scout Manager",
+  title: `${process.env.NEXT_PUBLIC_APP_NAME || "Trailhead"} — Scout Manager`,
   description: "Scout workflow, roster, and gear management.",
 };
 export const viewport: Viewport = { themeColor: "#2b3d31" };

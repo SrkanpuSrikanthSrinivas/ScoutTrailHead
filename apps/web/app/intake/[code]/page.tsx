@@ -62,7 +62,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="brand" style={{ justifyContent: "center", border: 0, marginBottom: 10, paddingBottom: 0 }}>
-          <span className="blaze" /><span><b>Trailhead</b><small>Scout Manager</small></span>
+          <span className="blaze" /><span><b>{process.env.NEXT_PUBLIC_APP_NAME || "Trailhead"}</b><small>Scout Manager</small></span>
         </div>
         {children}
       </div>

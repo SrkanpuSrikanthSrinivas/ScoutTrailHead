@@ -6,13 +6,15 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { C } from "../../lib/theme";
 import { Screen } from "../../lib/screen";
-import { ScreenHeader, Card, Btn } from "../../lib/ui";
+import { ScreenHeader, Card, Btn, Sheet, Field } from "../../lib/ui";
 
 export default function Dashboard() {
-  const { user, troop } = useAuth();
+  const { user, troop, renameTroop } = useAuth();
   const role = user?.role ?? "leader";
   const [d, setD] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [tname, setTname] = useState(troop?.name || "");
   const load = useCallback(async () => { setRefreshing(true); try { setD(await api("/dashboard")); } catch {} setRefreshing(false); }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -32,7 +34,8 @@ export default function Dashboard() {
 
   return (
     <Screen onRefresh={load} refreshing={refreshing}>
-      <ScreenHeader eyebrow="Overview" title="Home" subtitle={`Signed in as ${ROLE_LABEL[role as keyof typeof ROLE_LABEL]}`} />
+      <ScreenHeader eyebrow="Scout Manager" title={troop?.name || "Home"} subtitle={`Signed in as ${ROLE_LABEL[role as keyof typeof ROLE_LABEL]}`}
+        right={role === "admin" ? <Btn label="Rename" kind="ghost" small onPress={() => { setTname(troop?.name || ""); setRenameOpen(true); }} /> : undefined} />
 
       {d?.myActionCount > 0 && (
         <Pressable onPress={() => router.push("/(tabs)/pipeline")}>
@@ -80,6 +83,12 @@ export default function Dashboard() {
       ) : null}
 
       <Btn label="📨  Share parent intake link" kind="gold" onPress={shareIntake} />
+
+      <Sheet visible={renameOpen} onClose={() => setRenameOpen(false)} title="Troop name" subtitle="Shown across the app and on your parent intake link.">
+        <Field label="Troop name" value={tname} onChangeText={setTname} />
+        <Btn label="Save name" kind="gold" disabled={tname.trim().length < 2}
+          onPress={async () => { await renameTroop(tname.trim()); setRenameOpen(false); }} />
+      </Sheet>
     </Screen>
   );
 }

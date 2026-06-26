@@ -17,28 +17,38 @@ export default function Workflow() {
   const [refreshing, setRefreshing] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
+  const [flash, setFlash] = useState("");
+  const notify = (m: string) => { setFlash(m); setTimeout(() => setFlash(""), 2800); };
 
   const load = useCallback(async () => {
     setRefreshing(true);
-    try { const all = await api("/scouts"); setScouts(all.filter((s: any) => ["submitted", "web_setup", "finance"].includes(s.status))); } catch {}
+    try { setScouts(await api("/scouts")); } catch {}
     setRefreshing(false);
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const mine = scouts.filter((s) => ownsQueue(s.status, role));
-  const rest = scouts.filter((s) => !ownsQueue(s.status, role));
+  const open = scouts.filter((s) => ["submitted", "web_setup", "finance"].includes(s.status));
+  const approved = scouts.filter((s) => s.status === "active");
+  const mine = open.filter((s) => ownsQueue(s.status, role));
+  const rest = open.filter((s) => !ownsQueue(s.status, role));
+  const recent = [...approved].sort((a, b) => String(b.joined || "").localeCompare(String(a.joined || ""))).slice(0, 6);
 
   return (
     <Screen onRefresh={load} refreshing={refreshing}>
       <ScreenHeader eyebrow="Joining the troop" title="Intake"
         right={<Btn label="+ Walk-in" kind="gold" small onPress={() => setAddOpen(true)} />} />
-      {!scouts.length && <Card><Text style={{ textAlign: "center", color: C.inkSoft, padding: 20 }}>🧭{"\n"}No intake in progress. Parents submit via your intake link (share it from Home).</Text></Card>}
+      {flash ? <View style={{ backgroundColor: C.pine, borderRadius: 12, padding: 12, marginBottom: 12 }}><Text style={{ color: "#fff", fontWeight: "700", textAlign: "center" }}>{flash}</Text></View> : null}
+      {!open.length && !approved.length && <Card><Text style={{ textAlign: "center", color: C.inkSoft, padding: 20 }}>🧭{"\n"}No intake in progress. Parents submit via your intake link (share it from Home).</Text></Card>}
 
       {mine.length > 0 && <Text style={{ fontWeight: "700", color: C.moss, letterSpacing: 1, marginBottom: 8, marginTop: 4 }}>NEEDS YOU — {ROLE_LABEL[role as keyof typeof ROLE_LABEL].toUpperCase()}</Text>}
-      {mine.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={load} onEdit={() => setEdit(s)} highlight />)}
+      {mine.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={load} onEdit={() => setEdit(s)} notify={notify} highlight />)}
 
       {rest.length > 0 && <Text style={{ fontWeight: "700", color: C.inkSoft, letterSpacing: 1, marginBottom: 8, marginTop: 14 }}>ELSEWHERE IN THE PIPELINE</Text>}
-      {rest.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={load} onEdit={() => setEdit(s)} />)}
+      {rest.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={load} onEdit={() => setEdit(s)} notify={notify} />)}
+
+      {recent.length > 0 && <Text style={{ fontWeight: "700", color: C.moss, letterSpacing: 1, marginBottom: 8, marginTop: 14 }}>RECENTLY APPROVED</Text>}
+      {recent.map((s) => <ApprovedCard key={s.id} s={s} />)}
+      {approved.length > recent.length ? <Text style={{ color: C.inkSoft, fontSize: 12.5, marginTop: 2 }}>+ {approved.length - recent.length} more on the Roster tab.</Text> : null}
 
       <AddSheet open={addOpen} onClose={() => setAddOpen(false)} onSaved={() => { setAddOpen(false); load(); }} />
       <EditSheet scout={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />
@@ -46,7 +56,42 @@ export default function Workflow() {
   );
 }
 
-function WorkflowCard({ s, role, reload, onEdit, highlight }: any) {
+function MiniTrail({ status }: { status: string }) {
+  const idx = status === "active" ? STATUS_FLOW.length : (STATUS_FLOW as readonly string[]).indexOf(status);
+  return (
+    <View style={{ flexDirection: "row", marginVertical: 12 }}>
+      {STATUS_FLOW.map((st, i) => {
+        const done = i < idx, cur = i === idx;
+        return (
+          <View key={st} style={{ flex: 1, alignItems: "center" }}>
+            <View style={{ width: 26, height: 32, borderRadius: 5, borderWidth: 2, marginBottom: 5, alignItems: "center", justifyContent: "center", backgroundColor: done ? C.moss : cur ? C.gold : "#fffdf7", borderColor: done ? C.moss : cur ? C.gold : C.line }}>
+              <Text style={{ color: done || cur ? "#fff" : C.line, fontWeight: "700", fontSize: 11 }}>{done ? "✓" : i + 1}</Text>
+            </View>
+            <Text style={{ fontSize: 9.5, fontWeight: "600", textAlign: "center", color: done ? C.moss : cur ? C.goldDeep : C.inkSoft }}>{STATUS_META[st].short}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ApprovedCard({ s }: any) {
+  return (
+    <Card style={{ borderColor: "rgba(74,103,65,.4)" }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: C.pine }}>{s.name}</Text>
+        <View style={{ backgroundColor: C.pine, borderRadius: 30, paddingHorizontal: 9, paddingVertical: 3 }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>✓ APPROVED</Text></View>
+        {s.rank ? <Text style={{ color: C.inkSoft, fontSize: 12 }}>★ {s.rank}</Text> : null}
+      </View>
+      <MiniTrail status={s.status} />
+      <View style={{ backgroundColor: "rgba(74,103,65,.08)", borderLeftWidth: 3, borderLeftColor: C.moss, padding: 10, borderRadius: 8 }}>
+        <Text style={{ fontSize: 12.5, color: C.inkSoft }}>Payment confirmed{s.joined ? ` on ${s.joined}` : ""} — now on the active roster.</Text>
+      </View>
+    </Card>
+  );
+}
+
+function WorkflowCard({ s, role, reload, onEdit, notify, highlight }: any) {
   const [showTl, setShowTl] = useState(false);
   const [note, setNote] = useState("");
   const acts = actionsFor(s.status, role);
@@ -54,8 +99,12 @@ function WorkflowCard({ s, role, reload, onEdit, highlight }: any) {
   const meta = STATUS_META[s.status as keyof typeof STATUS_META];
 
   const go = async (to: string, label: string) => {
-    try { await api(`/scouts/${s.id}/transition`, { method: "POST", body: JSON.stringify({ to, note }) }); setNote(""); reload(); }
-    catch (e: any) { Alert.alert("Can't do that", e.message); }
+    try {
+      await api(`/scouts/${s.id}/transition`, { method: "POST", body: JSON.stringify({ to, note }) });
+      setNote("");
+      notify?.(to === "active" ? `🎉 ${s.name} approved — on the Roster` : to === "declined" ? `${s.name}'s intake declined` : `${s.name}: ${label}`);
+      reload();
+    } catch (e: any) { Alert.alert("Can't do that", e.message); }
   };
   const confirmDecline = (to: string, label: string) =>
     Alert.alert("Decline intake", `Decline ${s.name}'s intake?`, [{ text: "Cancel" }, { text: "Decline", style: "destructive", onPress: () => go(to, label) }]);

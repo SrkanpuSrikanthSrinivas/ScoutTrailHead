@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="brand"><span className="blaze" /><span><b>Trailhead</b><small>Scout Manager</small></span></div>
+        <div className="brand"><span className="blaze" /><span><b>{process.env.NEXT_PUBLIC_APP_NAME || "Trailhead"}</b><small>Scout Manager</small></span></div>
         <div className="tabs">
           {(["login", "signup", "join"] as Mode[]).map((m) => (
             <button key={m} className={mode === m ? "on" : ""} onClick={() => { setMode(m); setErr(""); }}>

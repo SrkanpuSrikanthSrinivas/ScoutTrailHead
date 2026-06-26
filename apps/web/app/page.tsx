@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   RANKS, INV_CATEGORIES, STATUS_FLOW, STATUS_META, ACTIONS, actionsFor, ownsQueue, waitingOn,
@@ -7,7 +7,7 @@ import {
 } from "@trailhead/core";
 
 type Badge = { id: string; name: string; earnedDate: string | null; given: boolean };
-type Event = { id: string; actor: string; action: string; note: string | null; createdAt: string };
+type Event = { id: string; actor: string; action: string; note: string | null; toStatus?: string | null; createdAt: string };
 type Scout = { id: string; name: string; type: ScoutType; status: Status; parentName?: string;
   contact?: string; prior?: string; rank?: string; joined?: string | null; badges: Badge[]; events: Event[] };
 type Item = { id: string; name: string; category: string; total: number; out: number; min: number };
@@ -30,9 +30,17 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   const role: Role = me?.user?.role ?? "leader";
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notify = useCallback((m: string) => {
+    setToast(m);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2800);
+  }, []);
   const loadScouts = useCallback(async () => setScouts(await (await api("/scouts")).json()), []);
   const loadItems = useCallback(async () => setItems(await (await api("/inventory")).json()), []);
   const loadFaqs = useCallback(async () => setFaqs(await (await api("/faqs")).json()), []);
+  const refreshMe = useCallback(async () => { const r = await api("/me"); if (r.ok) setMe(await r.json()); }, []);
 
   useEffect(() => {
     (async () => {
@@ -43,6 +51,9 @@ export default function App() {
       setReady(true);
     })();
   }, [router, loadScouts, loadItems, loadFaqs]);
+
+  // The troop name drives the browser tab title — nothing hard-coded per troop.
+  useEffect(() => { if (me?.troop?.name) document.title = `${me.troop.name} — Scout Manager`; }, [me?.troop?.name]);
 
   if (!ready) return <div style={{ padding: 40 }} className="muted">Loading the troop…</div>;
 
@@ -100,15 +111,16 @@ export default function App() {
 
         <div className="wrap">
           {view === "dash" && <Dash roster={roster} open={open} items={items} role={role} myInbox={myInbox} onGo={setView} />}
-          {view === "pipeline" && <Workflow open={open} role={role} reload={loadScouts} setModal={setModal} />}
+          {view === "pipeline" && <Workflow open={open} approved={roster} role={role} reload={loadScouts} setModal={setModal} notify={notify} setView={setView} />}
           {view === "roster" && <Roster roster={roster} reload={loadScouts} setModal={setModal} setView={setView} />}
           {view === "inventory" && <Inventory items={items} reload={loadItems} />}
           {view === "faq" && <FaqList faqs={faqs} reload={loadFaqs} setModal={setModal} />}
-          {view === "team" && <Team troop={me?.troop} />}
+          {view === "team" && <Team troop={me?.troop} onRenamed={refreshMe} />}
         </div>
       </main>
 
       {modal && <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setModal(null)}><div className="modal">{modal}</div></div>}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
@@ -168,28 +180,69 @@ function Dash({ roster, open, items, role, myInbox, onGo }: { roster: Scout[]; o
 /* ---------------- Workflow ---------------- */
 function statusIndex(s: Status) { return (STATUS_FLOW as readonly string[]).indexOf(s); }
 
-function Workflow({ open, role, reload, setModal }: { open: Scout[]; role: Role; reload: () => Promise<void>; setModal: (n: React.ReactNode) => void }) {
+/** When did this scout get approved? (newest event flipping to active, else joined date) */
+function approvedAt(s: Scout): string {
+  const ev = (s.events || []).filter((e) => e.toStatus === "active").map((e) => e.createdAt).sort();
+  return ev[ev.length - 1] || s.joined || "";
+}
+
+/** The four-gate trail. For an active scout every gate (including Approved) reads done. */
+function StatusTrail({ status }: { status: Status }) {
+  const idx = status === "active" ? STATUS_FLOW.length : statusIndex(status);
+  return (
+    <div className="trail" style={{ marginTop: 12 }}>
+      {STATUS_FLOW.map((st, i) => (
+        <div key={st} className={"step " + (i < idx ? "done" : i === idx ? "current" : "")}>
+          <div className="node">{i < idx ? "✓" : i + 1}</div><div className="lbl">{STATUS_META[st].short}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Workflow({ open, approved, role, reload, setModal, notify, setView }: { open: Scout[]; approved: Scout[]; role: Role; reload: () => Promise<void>; setModal: (n: React.ReactNode) => void; notify: (m: string) => void; setView: (v: View) => void }) {
   const mine = open.filter((s) => ownsQueue(s.status, role));
   const rest = open.filter((s) => !ownsQueue(s.status, role));
+  const recent = [...approved].sort((a, b) => approvedAt(b).localeCompare(approvedAt(a))).slice(0, 6);
   return (
     <>
-      {!open.length && <div className="empty">🧭<br /><strong>No intake in progress.</strong><br /><span className="muted">Parents submit through your intake link (see the Team tab), or add a walk-in above.</span></div>}
-      {mine.length > 0 && (<><div className="sectitle">Needs your action ({ROLE_LABEL[role]})</div>{mine.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={reload} setModal={setModal} highlight />)}</>)}
-      {rest.length > 0 && (<><div className="sectitle" style={{ marginTop: mine.length ? 22 : 0 }}>Elsewhere in the pipeline</div>{rest.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={reload} setModal={setModal} />)}</>)}
+      {!open.length && !approved.length && <div className="empty">🧭<br /><strong>No intake in progress.</strong><br /><span className="muted">Parents submit through your intake link (see the Team tab), or add a walk-in above.</span></div>}
+      {mine.length > 0 && (<><div className="sectitle">Needs your action ({ROLE_LABEL[role]})</div>{mine.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={reload} setModal={setModal} notify={notify} highlight />)}</>)}
+      {rest.length > 0 && (<><div className="sectitle" style={{ marginTop: mine.length ? 22 : 0 }}>Elsewhere in the pipeline</div>{rest.map((s) => <WorkflowCard key={s.id} s={s} role={role} reload={reload} setModal={setModal} notify={notify} />)}</>)}
+      {recent.length > 0 && (
+        <>
+          <div className="sectitle" style={{ marginTop: open.length ? 24 : 0 }}>Recently approved</div>
+          {recent.map((s) => (
+            <div key={s.id} className="card" style={{ borderColor: "rgba(74,103,65,.4)" }}>
+              <div className="row">
+                <span style={{ fontFamily: "Oswald", fontSize: 19, fontWeight: 600, color: "var(--pine)" }}>{s.name}</span>
+                <span className="spill active">✓ Approved</span>
+                {s.rank ? <span className="rank-badge"><span className="star">★</span>{s.rank}</span> : null}
+                <span style={{ flex: 1 }} />
+                <button className="btn ghost sm" onClick={() => setView("roster")}>View on roster</button>
+              </div>
+              <StatusTrail status={s.status} />
+              <div className="stepnote" style={{ borderLeftColor: "var(--moss)" }}>Payment confirmed{s.joined ? ` on ${s.joined}` : ""} — now on the active roster.</div>
+            </div>
+          ))}
+          {approved.length > recent.length && <div className="muted" style={{ marginTop: -4 }}>+ {approved.length - recent.length} more on the <a onClick={() => setView("roster")} style={{ cursor: "pointer", textDecoration: "underline" }}>Roster</a>.</div>}
+        </>
+      )}
     </>
   );
 }
 
-function WorkflowCard({ s, role, reload, setModal, highlight }: { s: Scout; role: Role; reload: () => Promise<void>; setModal: (n: React.ReactNode) => void; highlight?: boolean }) {
+function WorkflowCard({ s, role, reload, setModal, notify, highlight }: { s: Scout; role: Role; reload: () => Promise<void>; setModal: (n: React.ReactNode) => void; notify: (m: string) => void; highlight?: boolean }) {
   const [showTl, setShowTl] = useState(false);
   const [note, setNote] = useState("");
   const acts = actionsFor(s.status, role);
-  const idx = statusIndex(s.status);
 
-  async function go(to: string) {
+  async function go(to: string, label: string) {
     const res = await api(`/scouts/${s.id}/transition`, { method: "POST", body: JSON.stringify({ to, note }) });
     if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.error || "Couldn't update"); return; }
-    setNote(""); await reload();
+    setNote("");
+    notify(to === "active" ? `🎉 ${s.name} approved — now on the Roster` : to === "declined" ? `${s.name}'s intake declined` : `${s.name}: ${label}`);
+    await reload();
   }
 
   return (
@@ -203,13 +256,7 @@ function WorkflowCard({ s, role, reload, setModal, highlight }: { s: Scout; role
       </div>
       {(s.parentName || s.contact) && <div className="muted" style={{ marginTop: 4 }}>Parent: {s.parentName || "—"}{s.contact ? ` · ${s.contact}` : ""}{s.prior ? ` · from ${s.prior}` : ""}{s.rank ? ` · rank ${s.rank}` : ""}</div>}
 
-      <div className="trail" style={{ marginTop: 12 }}>
-        {STATUS_FLOW.map((st, i) => (
-          <div key={st} className={"step " + (i < idx ? "done" : i === idx ? "current" : "")}>
-            <div className="node">{i < idx ? "✓" : i + 1}</div><div className="lbl">{STATUS_META[st].short}</div>
-          </div>
-        ))}
-      </div>
+      <StatusTrail status={s.status} />
       <div className="stepnote"><b>{STATUS_META[s.status].label}:</b> {STATUS_META[s.status].desc}</div>
 
       {acts.length > 0 ? (
@@ -218,12 +265,12 @@ function WorkflowCard({ s, role, reload, setModal, highlight }: { s: Scout; role
             <input className="note-in" placeholder="Optional note (e.g. why sending back / declining)" value={note} onChange={(e) => setNote(e.target.value)} />
           )}
           <div className="row" style={{ marginTop: 10 }}>
-            {acts.filter((a) => a.kind === "forward").map((a) => <button key={a.to} className="btn gold" onClick={() => go(a.to)}>{a.label}</button>)}
+            {acts.filter((a) => a.kind === "forward").map((a) => <button key={a.to} className="btn gold" onClick={() => go(a.to, a.label)}>{a.label}</button>)}
             {(s.status === "web_setup" || role === "admin") && (role === "web_setup" || role === "admin") &&
               <button className="btn ghost sm" onClick={() => setModal(<EditDetails scout={s} onDone={async () => { setModal(null); await reload(); }} />)}>Edit details / rank</button>}
-            {acts.filter((a) => a.kind === "back").map((a) => <button key={a.to} className="btn ghost sm" onClick={() => go(a.to)}>{a.label}</button>)}
+            {acts.filter((a) => a.kind === "back").map((a) => <button key={a.to} className="btn ghost sm" onClick={() => go(a.to, a.label)}>{a.label}</button>)}
             <span style={{ flex: 1 }} />
-            {acts.filter((a) => a.kind === "decline").map((a) => <button key={a.to} className="btn danger sm" onClick={() => { if (confirm(`Decline ${s.name}'s intake?`)) go(a.to); }}>{a.label}</button>)}
+            {acts.filter((a) => a.kind === "decline").map((a) => <button key={a.to} className="btn danger sm" onClick={() => { if (confirm(`Decline ${s.name}'s intake?`)) go(a.to, a.label); }}>{a.label}</button>)}
           </div>
         </>
       ) : <div className="muted" style={{ marginTop: 8 }}>You can watch this one but only <b>{waitingOn(s.status)}</b> can move it forward.</div>}
@@ -241,17 +288,38 @@ function WorkflowCard({ s, role, reload, setModal, highlight }: { s: Scout; role
 }
 
 /* ---------------- Team ---------------- */
-function Team({ troop }: { troop: any }) {
+function Team({ troop, onRenamed }: { troop: any; onRenamed: () => Promise<void> }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [copied, setCopied] = useState("");
+  const [tname, setTname] = useState(troop?.name || "");
+  const [saving, setSaving] = useState("");
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const intakeLink = `${origin}/intake/${troop?.inviteCode}`;
   const load = useCallback(async () => { const r = await api("/users"); if (r.ok) setMembers(await r.json()); }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setTname(troop?.name || ""); }, [troop?.name]);
   const setRole = async (id: string, role: string) => { await api(`/users/${id}`, { method: "PATCH", body: JSON.stringify({ role }) }); load(); };
   const copy = (txt: string, what: string) => { navigator.clipboard?.writeText(txt); setCopied(what); setTimeout(() => setCopied(""), 1500); };
+  const saveName = async () => {
+    const name = tname.trim(); if (name.length < 2) return;
+    setSaving("saving");
+    const r = await api("/troop", { method: "PATCH", body: JSON.stringify({ name }) });
+    if (r.ok) { await onRenamed(); setSaving("saved"); } else { setSaving("err"); }
+    setTimeout(() => setSaving(""), 1600);
+  };
   return (
     <>
+      <div className="card">
+        <div className="sectitle">Troop name</div>
+        <p className="muted" style={{ marginTop: -4 }}>Shown across the app, in the browser title, and on the parent intake page. Change it to set this up for your own troop.</p>
+        <div className="row">
+          <input value={tname} onChange={(e) => setTname(e.target.value)} placeholder="e.g. Troop 100, McKinney" style={{ flex: 1, minWidth: 200 }} onKeyDown={(e) => e.key === "Enter" && saveName()} />
+          <button className="btn gold" disabled={tname.trim().length < 2 || saving === "saving"} onClick={saveName}>
+            {saving === "saved" ? "Saved!" : saving === "saving" ? "Saving…" : "Save name"}
+          </button>
+        </div>
+        {saving === "err" && <div className="err" style={{ marginTop: 8 }}>Couldn’t save — admins only.</div>}
+      </div>
       <div className="card">
         <div className="sectitle">Share with parents</div>
         <p className="muted" style={{ marginTop: -4 }}>Anyone with this link can submit a scout — no account needed. New submissions land in the Web Setup queue.</p>

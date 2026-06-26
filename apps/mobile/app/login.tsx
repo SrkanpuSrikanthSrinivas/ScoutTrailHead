@@ -32,7 +32,7 @@ export default function Login() {
         <View style={{ backgroundColor: C.paper, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 26 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 }}>
             <View style={{ width: 26, height: 34, borderRadius: 4, backgroundColor: C.gold }} />
-            <View><Text style={{ fontSize: 20, fontWeight: "700", color: C.pine, letterSpacing: 1 }}>TRAILHEAD</Text>
+            <View><Text style={{ fontSize: 20, fontWeight: "700", color: C.pine, letterSpacing: 1 }}>{(process.env.EXPO_PUBLIC_APP_NAME || "Trailhead").toUpperCase()}</Text>
               <Text style={{ fontSize: 11, color: C.gold, fontWeight: "700", letterSpacing: 1 }}>SCOUT MANAGER</Text></View>
           </View>
           <View style={{ flexDirection: "row", backgroundColor: C.sandDeep, borderRadius: 10, padding: 4, marginBottom: 16 }}>

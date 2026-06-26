@@ -75,6 +75,16 @@ account. See `docs/WORKFLOW.md` for the full flow.
 - `docs/DEPLOY-VERCEL.md` — web + API
 - `docs/DEPLOY-MOBILE.md` — iOS + Android via EAS
 
+## Naming your troop (configurable, not hard-coded)
+The troop name is per-troop data, so the same deployment works for any troop:
+- **At setup:** the **New troop** tab on the sign-in screen asks for your troop name.
+- **Anytime after:** an admin can rename it under **Team → Troop name** (web) or via the
+  **Rename** button on the mobile Home screen. The new name immediately drives the sidebar,
+  the browser tab title, and the parent intake page.
+- **Product label (optional):** the brand shown on the sign-in screen and browser title
+  before login defaults to "Trailhead". To change it per deployment, set
+  `NEXT_PUBLIC_APP_NAME` (web) / `EXPO_PUBLIC_APP_NAME` (mobile) in your env.
+
 ## Changing the rank ladder / steps
 This is configured for **Scouts BSA** (Scout → Eagle). To switch to Cub Scouts or another
 program, edit `packages/core/src/index.ts` — change `RANKS`, `STEPS_NEW`, and `STEPS_TRANSFER`.

@@ -126,3 +126,7 @@ td{padding:9px 10px;border-bottom:1px solid var(--line)}
 .linkbox{display:flex;gap:8px;align-items:center;background:#fffdf7;border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all}
 .role-legend{font-size:13px;color:var(--ink-soft);line-height:1.7}
 .role-legend b{color:var(--pine)}
+
+/* ---- toast ---- */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--pine);color:#fff;padding:12px 22px;border-radius:30px;font-weight:600;font-size:14px;box-shadow:0 14px 34px -10px rgba(0,0,0,.5);z-index:80;animation:toastin .25s ease}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
