@@ -32,6 +32,9 @@ migration; `neon-setup.sql` is just the current snapshot.
 - `gen_random_uuid()` is built into Neon (Postgres 13+); no extension needed.
 - The SQL files are generated from the same source as the app (`packages/db/src/schema.ts`),
   so they never drift.
-- If you ran an older version, the schema changed (workflow `status`, `scout_events`, roles).
+- **Sign-in tracking** added a `sessions` table. Since `neon-setup.sql` uses
+  `CREATE TABLE IF NOT EXISTS`, just **re-run it** on your existing database — it creates the
+  new `sessions` table and leaves the rest untouched. No data is lost.
+- If you ran an older version, the schema changed (workflow `status`, `scout_events`, roles, `sessions`).
   On a throwaway DB just re-run `neon-setup.sql`; on a DB with real data, write an
   `ALTER TABLE` migration instead.

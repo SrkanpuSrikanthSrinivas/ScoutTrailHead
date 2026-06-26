@@ -130,3 +130,17 @@ td{padding:9px 10px;border-bottom:1px solid var(--line)}
 /* ---- toast ---- */
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--pine);color:#fff;padding:12px 22px;border-radius:30px;font-weight:600;font-size:14px;box-shadow:0 14px 34px -10px rgba(0,0,0,.5);z-index:80;animation:toastin .25s ease}
 @keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ---- sign-in activity ---- */
+.signin-table{font-size:13px}
+.signin-row{display:grid;grid-template-columns:1.4fr 1fr 1fr .6fr 1.3fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start}
+.signin-row:last-child{border-bottom:0}
+.signin-head{font-family:"Oswald";font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);border-bottom:2px solid var(--line)}
+.active-dot{color:var(--moss);font-weight:700;font-size:12px}
+@media(max-width:720px){
+  .signin-row{grid-template-columns:1fr 1fr;row-gap:2px}
+  .signin-head{display:none}
+  .signin-row span:nth-child(2)::before{content:"in: ";color:var(--ink-soft)}
+  .signin-row span:nth-child(3)::before{content:"out: ";color:var(--ink-soft)}
+  .signin-row span:nth-child(4)::before{content:"for: ";color:var(--ink-soft)}
+}

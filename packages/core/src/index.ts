@@ -144,4 +144,4 @@ export const inventorySchema = z.object({
 });
 export const faqSchema = z.object({ question: z.string().min(1), answer: z.string().default("") });
 
-export type AuthClaims = { userId: string; troopId: string; role: Role };
+export type AuthClaims = { userId: string; troopId: string; role: Role; sid?: string };

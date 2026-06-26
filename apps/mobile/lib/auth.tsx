@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login: async (email, password) => finish(await api("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) })),
     signup: async (troopName, name, email, password) => finish(await api("/auth/signup", { method: "POST", body: JSON.stringify({ troopName, name, email, password }) })),
     join: async (inviteCode, name, email, password) => finish(await api("/auth/join", { method: "POST", body: JSON.stringify({ inviteCode, name, email, password }) })),
-    logout: async () => { await clearToken(); setUser(null); setTroop(null); },
+    logout: async () => { try { await api("/auth/logout", { method: "POST" }); } catch {} await clearToken(); setUser(null); setTroop(null); },
     renameTroop: async (name: string) => {
       const r = await api("/troop", { method: "PATCH", body: JSON.stringify({ name }) });
       setTroop((t) => (t ? { ...t, name: r.name } : t));

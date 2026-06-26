@@ -5,6 +5,7 @@ import { randomBytes } from "node:crypto";
 import { getDb, troops, users, inventory, faqs } from "@trailhead/db";
 import { signupSchema, DEFAULT_INVENTORY, DEFAULT_FAQ } from "@trailhead/core";
 import { signToken, setAuthCookie } from "@/lib/auth";
+import { startSession } from "@/lib/session";
 import { ok, bad } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest) {
   await db.insert(inventory).values(DEFAULT_INVENTORY.map((i) => ({ ...i, troopId: troop.id })));
   await db.insert(faqs).values(DEFAULT_FAQ.map((f, idx) => ({ ...f, troopId: troop.id, position: idx })));
 
-  const token = await signToken({ userId: user.id, troopId: troop.id, role: "admin" });
+  const sid = await startSession(user.id, troop.id, req);
+  const token = await signToken({ userId: user.id, troopId: troop.id, role: "admin", sid });
   await setAuthCookie(token);
   return ok({ token, user: { id: user.id, name, email, role: "admin" }, troop: { id: troop.id, name: troopName, inviteCode: code } });
 }

@@ -52,6 +52,16 @@ CREATE TABLE IF NOT EXISTS "scouts" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "sessions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"troop_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"login_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"logout_at" timestamp with time zone,
+	"ip" text DEFAULT '',
+	"user_agent" text DEFAULT ''
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "troops" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
@@ -102,6 +112,18 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
+ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_troop_id_troops_id_fk" FOREIGN KEY ("troop_id") REFERENCES "public"."troops"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
  ALTER TABLE "users" ADD CONSTRAINT "users_troop_id_troops_id_fk" FOREIGN KEY ("troop_id") REFERENCES "public"."troops"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -112,4 +134,6 @@ CREATE INDEX IF NOT EXISTS "faqs_troop_idx" ON "faqs" USING btree ("troop_id");-
 CREATE INDEX IF NOT EXISTS "inventory_troop_idx" ON "inventory" USING btree ("troop_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "events_scout_idx" ON "scout_events" USING btree ("scout_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "scouts_troop_idx" ON "scouts" USING btree ("troop_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "scouts_status_idx" ON "scouts" USING btree ("status");
+CREATE INDEX IF NOT EXISTS "scouts_status_idx" ON "scouts" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "sessions_troop_idx" ON "sessions" USING btree ("troop_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "sessions_user_idx" ON "sessions" USING btree ("user_id");

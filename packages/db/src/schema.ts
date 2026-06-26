@@ -18,6 +18,17 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Append-only sign-in log: one row per login; logoutAt stamped on sign-out. */
+export const sessions = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  troopId: uuid("troop_id").notNull().references(() => troops.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  loginAt: timestamp("login_at", { withTimezone: true }).defaultNow().notNull(),
+  logoutAt: timestamp("logout_at", { withTimezone: true }),
+  ip: text("ip").default(""),
+  userAgent: text("user_agent").default(""),
+}, (t) => ({ byTroop: index("sessions_troop_idx").on(t.troopId), byUser: index("sessions_user_idx").on(t.userId) }));
+
 export const scouts = pgTable("scouts", {
   id: uuid("id").primaryKey().defaultRandom(),
   troopId: uuid("troop_id").notNull().references(() => troops.id, { onDelete: "cascade" }),

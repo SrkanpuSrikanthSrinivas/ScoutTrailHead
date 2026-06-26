@@ -17,7 +17,7 @@ export async function signToken(claims: AuthClaims): Promise<string> {
 export async function verifyToken(token: string): Promise<AuthClaims | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
-    return { userId: String(payload.userId), troopId: String(payload.troopId), role: payload.role as AuthClaims["role"] };
+    return { userId: String(payload.userId), troopId: String(payload.troopId), role: payload.role as AuthClaims["role"], sid: payload.sid ? String(payload.sid) : undefined };
   } catch {
     return null;
   }

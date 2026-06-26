@@ -76,6 +76,12 @@ account. See `docs/WORKFLOW.md` for the full flow.
 - `docs/DEPLOY-VERCEL.md` — web + API
 - `docs/DEPLOY-MOBILE.md` — iOS + Android via EAS
 
+## Sign-in tracking
+Every login records a row in the `sessions` table (who, when, device, IP). Signing out stamps
+the logout time; sessions with no sign-out show as **active** (the person closed the tab/app or
+the token is still valid). Admins see the full log under **Team → Sign-in activity**. Mobile
+sign-out now calls the API too, so logout times are captured on phones as well.
+
 ## Naming your troop (configurable, not hard-coded)
 The troop name is per-troop data, so the same deployment works for any troop:
 - **At setup:** the **New troop** tab on the sign-in screen asks for your troop name.

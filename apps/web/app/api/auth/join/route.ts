@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { getDb, users } from "@trailhead/db";
 import { joinSchema } from "@trailhead/core";
 import { signToken, setAuthCookie } from "@/lib/auth";
+import { startSession } from "@/lib/session";
 import { ok, bad } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
@@ -19,7 +20,8 @@ export async function POST(req: NextRequest) {
     troopId: troop.id, email: email.toLowerCase(),
     passwordHash: await bcrypt.hash(password, 10), name, role: "leader",
   }).returning();
-  const token = await signToken({ userId: user.id, troopId: troop.id, role: "leader" });
+  const sid = await startSession(user.id, troop.id, req);
+  const token = await signToken({ userId: user.id, troopId: troop.id, role: "leader", sid });
   await setAuthCookie(token);
   return ok({ token, user: { id: user.id, name, email, role: "leader" }, troop });
 }

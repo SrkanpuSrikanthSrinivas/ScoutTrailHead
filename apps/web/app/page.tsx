@@ -345,7 +345,58 @@ function Team({ troop, onRenamed }: { troop: any; onRenamed: () => Promise<void>
           {ROLES.map((r) => <div key={r}><b>{ROLE_LABEL[r]}:</b> {ROLE_BLURB[r]}</div>)}
         </div>
       </div>
+      <SignInActivity />
     </>
+  );
+}
+
+function deviceLabel(ua: string) {
+  if (!ua) return "Unknown device";
+  const os = /iphone|ipad|ios/i.test(ua) ? "iOS" : /android/i.test(ua) ? "Android"
+    : /mac os|macintosh/i.test(ua) ? "Mac" : /windows/i.test(ua) ? "Windows" : /linux/i.test(ua) ? "Linux" : "";
+  const app = /trailhead|expo|okhttp|cfnetwork/i.test(ua) ? "Mobile app"
+    : /edg\//i.test(ua) ? "Edge" : /chrome\//i.test(ua) ? "Chrome" : /firefox\//i.test(ua) ? "Firefox"
+    : /safari\//i.test(ua) ? "Safari" : "Browser";
+  return [app, os].filter(Boolean).join(" · ");
+}
+function fmtDT(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function duration(a: string, b: string | null) {
+  if (!b) return null;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  if (ms < 0) return null;
+  const m = Math.round(ms / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60); return `${h}h ${m % 60}m`;
+}
+
+function SignInActivity() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { (async () => { const r = await api("/login-events"); if (r.ok) setRows(await r.json()); setLoaded(true); })(); }, []);
+  return (
+    <div className="card">
+      <div className="sectitle">Sign-in activity</div>
+      <p className="muted" style={{ marginTop: -4 }}>Most recent logins for this troop. “Active” means no sign-out was recorded (they closed the app/tab or the session is still open).</p>
+      {!loaded ? <div className="muted">Loading…</div> : !rows.length ? <div className="muted">No sign-ins recorded yet.</div> : (
+        <div className="signin-table">
+          <div className="signin-row signin-head">
+            <span>Who</span><span>Signed in</span><span>Signed out</span><span>For</span><span>Device · IP</span>
+          </div>
+          {rows.map((s) => (
+            <div key={s.id} className="signin-row">
+              <span><b>{s.name}</b><br /><span className="muted">{ROLE_LABEL[s.role as Role] ?? s.role}</span></span>
+              <span>{fmtDT(s.loginAt)}</span>
+              <span>{s.logoutAt ? fmtDT(s.logoutAt) : <span className="active-dot">● active</span>}</span>
+              <span>{duration(s.loginAt, s.logoutAt) ?? "—"}</span>
+              <span className="muted">{deviceLabel(s.userAgent)}{s.ip ? <><br />{s.ip}</> : null}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
