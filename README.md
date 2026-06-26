@@ -44,10 +44,10 @@ cp .env.example .env
 cp .env apps/web/.env            # web reads these at runtime
 #   generate a secret:  openssl rand -base64 48
 
-# 3. create the database tables, then seed a demo troop
+# 3. create the database tables, then seed a TROOP 216
 npm run db:generate              # creates SQL migrations from the schema
 npm run db:migrate               # applies them to Neon
-npm run db:seed                  # demo troop + 3 role logins (all password123) + sample scouts
+npm run db:seed                  # TROOP 216 + 3 role logins (all password123) + sample scouts
 
 # 4. run the web app (http://localhost:3000)
 npm run dev:web

@@ -14,7 +14,7 @@
    ```bash
    npm run db:generate     # turn the schema into SQL migration files (packages/db/drizzle/)
    npm run db:migrate      # apply to Neon
-   npm run db:seed         # optional: demo troop + admin login + starter gear/FAQ
+   npm run db:seed         # optional: TROOP 216 + admin login + starter gear/FAQ
    ```
 
 5. (Optional) Use Neon **branches** for a staging database — branch `main`, point your

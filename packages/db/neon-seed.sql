@@ -1,6 +1,6 @@
 -- ============================================================
 --  Trailhead — OPTIONAL demo seed
---  Run AFTER neon-setup.sql. Creates a demo troop you can log into.
+--  Run AFTER neon-setup.sql. Creates a TROOP 216 you can log into.
 --  Logins (all password: password123):
 --    admin@example.com    (admin)
 --    web@example.com      (web setup)
@@ -15,7 +15,7 @@ DECLARE
   code text := upper(substr(md5(random()::text), 1, 8));
   pw   text := '$2a$10$E2G7hWcTWWCL6Xay2Q07Q.O9zMQqXhhJW0WVM41u0y.wwlxBe7S02';   -- bcrypt hash of "password123"
 BEGIN
-  INSERT INTO troops (name, invite_code) VALUES ('Demo Troop 100', code) RETURNING id INTO t_id;
+  INSERT INTO troops (name, invite_code) VALUES ('TROOP 216 100', code) RETURNING id INTO t_id;
 
   INSERT INTO users (troop_id, email, password_hash, name, role) VALUES
     (t_id, 'admin@example.com',   pw, 'Troop Admin',   'admin'),

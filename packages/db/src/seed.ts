@@ -4,11 +4,11 @@ import { DEFAULT_INVENTORY, DEFAULT_FAQ } from "@trailhead/core";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 
-/** Demo troop + one user per workflow role + a few scouts spread across the gates. */
+/** TROOP 216 + one user per workflow role + a few scouts spread across the gates. */
 async function main() {
   const db = getDb();
   const code = randomBytes(4).toString("hex").toUpperCase();
-  const [troop] = await db.insert(troops).values({ name: "Demo Troop 100", inviteCode: code }).returning();
+  const [troop] = await db.insert(troops).values({ name: "TROOP 216 100", inviteCode: code }).returning();
 
   const pw = await bcrypt.hash("password123", 10);
   await db.insert(users).values([
